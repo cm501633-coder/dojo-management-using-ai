@@ -1,0 +1,38 @@
+services:
+  database:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: dojo
+      MYSQL_USER: dojo_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./server
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_DATABASE: dojo
+      DB_USER: dojo_app
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?Set ADMIN_USERNAME in .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    ports:
+      - "3000:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
